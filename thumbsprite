@@ -4,7 +4,7 @@
 if [ $1 ]
 then
 	fbasename=${1##*/};
-  fbasename=${fbasename%.*};
+  	fbasename=${fbasename%.*};
 	tsfile="$fbasename"_ts.jpg;
 	tsvttfile="$fbasename".vtt;
 	#Thumnails Directory

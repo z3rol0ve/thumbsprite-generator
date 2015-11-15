@@ -20,7 +20,7 @@ then
 	mkdir -p "$thumbdir";
 	rm "$thumbdir"/* -r;
 	#Extract frame
-	avconv -y -i "$1" -f image2 -bt 20M -vf fps=1/"$(($timegap*60))" "$thumbdir"/ts%03d.jpg;
+	avconv -y -i "$1" -f image2 -q:v 0 -vf fps=1/"$(($timegap*60))" "$thumbdir"/ts%03d.jpg;
 	if [ "$(ls -A $thumbdir)" ]; then
 		#Resize Thumbnails
 		mogrify -geometry "$thumbwidth"x "$thumbdir"/*;

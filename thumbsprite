@@ -1,0 +1,66 @@
+#!/bin/bash
+#dependency: imagemagick, libav-tools, jpegoptim
+#Author Nam Hoang @ thanhnam.hoang@gmail.com
+if [ $1 ]
+then
+	fbasename=${1##*/};
+  fbasename=${fbasename%.*};
+	tsfile="$fbasename"_ts.jpg;
+	tsvttfile="$fbasename".vtt;
+	#Thumnails Directory
+	thumbdir="tsthumb"
+	#Time between shot in minute
+	timegap=2;
+	if [[ $2 =~ ^-?[0-9]+$ ]] && [ $2 -ge 0 ]; then timegap=$2; fi;
+	#Max width of a shot
+	thumbwidth=100;
+	
+	
+	######## MAIN SCRIPT #######
+	mkdir -p "$thumbdir";
+	rm "$thumbdir"/* -r;
+	#Extract frame
+	avconv -y -i "$1" -f image2 -bt 20M -vf fps=1/"$(($timegap*60))" "$thumbdir"/ts%03d.jpg;
+	if [ "$(ls -A $thumbdir)" ]; then
+		#Resize Thumbnails
+		mogrify -geometry "$thumbwidth"x "$thumbdir"/*;
+	
+		thumbfile=$(ls -t "$thumbdir"/ | head -n 1);
+		thumbsize=$(identify -format "%g" "$thumbdir"/"$thumbfile");
+		#Merge thumbnails
+		montage "$thumbdir"/* -geometry "$thumbsize" "$tsfile"
+		dpkg -s "jpegoptim" >/dev/null 2>&1 && {
+			jpegoptim "$tsfile" --strip-all
+		} || {}
+		thumbheight=$(identify -format "%h" "$thumbdir"/"$thumbfile");
+	
+		tswidth=$(identify -format "%w" "$tsfile");
+		tsheight=$(identify -format "%h" "$tsfile");
+	
+		TSHOUR=0;
+		TSMIN=0;
+		TSVTT='';
+		tsx=0;
+		tsy=0;
+		while true; do
+			TSVTT="$TSVTT""$(printf "%02d\n" $TSHOUR)"':'"$(printf "%02d\n" $TSMIN)"':00.000 --> ';
+			((TSMIN+=$timegap));
+			if [ $TSMIN -ge 60 ];then
+				((TSHOUR+=$(($TSMIN/60))));
+				((TSMIN-=$(($TSMIN/60))*60));
+			fi;
+			TSVTT="$TSVTT""$(printf "%02d\n" $TSHOUR)"':'"$(printf "%02d\n" $TSMIN)"':00.000\n';
+			TSVTT="$TSVTT""$tsfile"'#xywh='"$tsx"','"$tsy"','"$thumbwidth"','"$thumbheight"'\n\n';
+			((tsx+=$thumbwidth));
+			if [ $tsx -ge $tswidth ];then
+				tsx=0;
+				((tsy+=$thumbheight));
+			fi;
+			if [ $tsy -ge $tsheight ];then
+				break;
+			fi;
+		done
+		echo -e "$TSVTT" > "$tsvttfile";
+	fi;
+	rm "$thumbdir" -r;
+fi

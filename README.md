@@ -1,3 +1,3 @@
 # thumbsprite-generator
-Usage
-thumbsprite path/file.mp4 2
+Usage<br /><br />
+./thumbsprite path/file.mp4 2
